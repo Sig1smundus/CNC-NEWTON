@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>CNC-NEWTON</title> <!-- Изменено название -->
+    <title>CNC-NEWTON</title>
     <style>
         :root {
-            --bg: #f0f0f0; --card: #e6e6e6; --accent: #ff6b35; --text: #333;
+            --bg: #f0f0f0; --card: #e6e6e6; --accent: #d32f2f; --text: #333; /* Красный акцент */
             --text-secondary: #666; --border: #ccc; --input-bg: transparent;
-            --code-bg: #222; --code-text: #4af626; --header-bg: #fff;
+            --code-bg: #222; --code-text: #ff5252; --header-bg: #fff; /* Красный текст кода */
             --table-border: #ccc; --table-bg: #fff;
         }
         body.dark-theme {
             --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --text-secondary: #aaa;
-            --border: #444; --input-bg: #2a2a2a; --code-bg: #000; --code-text: #4af626;
+            --border: #444; --input-bg: #2a2a2a; --code-bg: #000; --code-text: #ff5252; /* Красный текст кода */
             --header-bg: #1e1e1e; --table-border: #444; --table-bg: #1e1e1e;
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -68,7 +68,6 @@
 <body>
 
     <header>
-        <!-- ИЗМЕНЕНО НАЗВАНИЕ -->
         <div class="logo">CNC-NEWTON</div>
         <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">🌙</button>
     </header>
@@ -80,8 +79,6 @@
         <div class="tab" id="tab-fillet" onclick="switchTab(event, 'fillet')">Галтель+Фаска</div>
         <div class="tab" id="tab-hex" onclick="switchTab(event, 'hex')">Шестигранник</div>
         <div class="tab" id="tab-drill" onclick="switchTab(event, 'drill')">Конус</div>
-        <div class="tab" id="tab-modes" onclick="switchTab(event, 'modes')">Режимы</div>
-        <div class="tab" id="tab-bore" onclick="switchTab(event, 'bore')">Расточка</div>
         <div class="tab" id="tab-coord" onclick="switchTab(event, 'coord')">Координаты</div>
         <div class="tab" id="tab-angle" onclick="switchTab(event, 'angle')">Углы</div>
         <div class="tab" id="tab-ref" onclick="switchTab(event, 'ref')">Справочник</div>
@@ -146,7 +143,8 @@
                 <label class="radio-label"><input type="radio" name="ch_type" value="out" checked> Наружная</label>
                 <label class="radio-label"><input type="radio" name="ch_type" value="in"> Внутренняя</label>
             </div>
-            <div class="input-row"><label>Конечный диаметр</label><input type="number" id="ch_d" value="20" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Начальный диаметр</label><input type="number" id="ch_d_start" value="20" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Конечный диаметр</label><input type="number" id="ch_d_end" value="21" step="0.1"><div class="unit">мм</div></div>
             <div class="input-row"><label>Глубина (катет)</label><input type="number" id="ch_depth" value="0.5" step="0.1"><div class="unit">мм</div></div>
             <div class="input-row"><label>Угол фаски</label><input type="number" id="ch_angle" value="45" step="1"><div class="unit">°</div></div>
             <div class="input-row" style="margin-top: 15px; border-bottom: none;"><label style="font-weight:bold; color:var(--accent);">Расчет</label></div>
@@ -207,7 +205,7 @@
             <div class="group-title">Параметры шестигранника (радиальная фреза)</div>
             <div class="input-row"><label>Диаметр заготовки</label><input type="number" id="hx_work_d" value="50" step="0.1"><div class="unit">мм</div></div>
             <div class="input-row"><label>Размер "под ключ"</label><input type="number" id="hx_key" value="36" step="0.1"><div class="unit">мм</div></div>
-            <div class="input-row"><label>Диаметр фрезы</label><input type="number" id="hx_tool" value="16" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Припуск на проход (X)</label><input type="number" id="hx_step_x" value="2" step="0.1"><div class="unit">мм</div></div>
             <div class="input-row"><label>Длина шестигранника</label><input type="number" id="hx_len" value="14" step="0.1"><div class="unit">мм</div></div>
             <div class="input-row"><label>Подача (F)</label><input type="number" id="hx_feed" value="60" step="1"><div class="unit">мм/мин</div></div>
             <div class="input-row"><label>Обороты шпинделя</label><input type="number" id="hx_rpm" value="400" step="10"><div class="unit">об/мин</div></div>
@@ -229,38 +227,7 @@
         <div id="dr_out" class="output">Глубина конуса: -</div>
     </div>
 
-    <!-- 7. РЕЖИМЫ -->
-    <div id="modes" class="content">
-        <div class="settings-group">
-            <div class="group-title">Калькулятор режимов</div>
-            <div class="input-row"><label>Диаметр</label><input type="number" id="md_d" value="6"><div class="unit">мм</div></div>
-            <div class="input-row"><label>Зубья</label><input type="number" id="md_z" value="2"><div class="unit">шт</div></div>
-            <div class="input-row"><label>Скорость (Vc)</label>
-                <select id="md_mat">
-                    <option value="300">300 (Алюминий)</option>
-                    <option value="120">120 (Сталь)</option>
-                    <option value="200">200 (Латунь)</option>
-                    <option value="400">400 (Дерево)</option>
-                </select>
-            </div>
-        </div>
-        <button class="calc-btn" onclick="calcModes()">Рассчитать S и F</button>
-        <div id="md_out" class="output">Обороты S: - \nПодача F: -</div>
-    </div>
-
-    <!-- 8. РАСТОЧКА -->
-    <div id="bore" class="content">
-        <div class="settings-group">
-            <div class="group-title">Параметры расточки</div>
-            <div class="input-row"><label>Диаметр отверстия</label><input type="number" id="br_d" value="20" step="0.1"><div class="unit">мм</div></div>
-            <div class="input-row"><label>Размер с пластиной</label><input type="number" id="br_size" value="12" step="0.1"><div class="unit">мм</div></div>
-            <div class="input-row"><label>Мин. диаметр</label><input type="number" id="br_min" value="10" step="0.1"><div class="unit">мм</div></div>
-        </div>
-        <button class="calc-btn" onclick="calcBore()">Рассчитать</button>
-        <div id="br_out" class="output">Здесь будет результат...</div>
-    </div>
-
-    <!-- 9. КООРДИНАТЫ -->
+    <!-- 7. КООРДИНАТЫ -->
     <div id="coord" class="content">
         <div class="settings-group">
             <div class="group-title">Декартова СК (X, Y)</div>
@@ -281,7 +248,7 @@
         <div id="coord_out" class="output">Результат...</div>
     </div>
 
-    <!-- 10. УГЛЫ -->
+    <!-- 8. УГЛЫ -->
     <div id="angle" class="content">
         <div class="settings-group">
             <div class="group-title">Градусы в десятичной системе</div>
@@ -300,7 +267,7 @@
         <div id="ang_out" class="output">Результат...</div>
     </div>
 
-    <!-- 11. СПРАВОЧНИК -->
+    <!-- 9. СПРАВОЧНИК -->
     <div id="ref" class="content">
         <div class="settings-group">
             <div class="group-title">Глубина центровки (ГОСТ)</div>
@@ -500,31 +467,72 @@
             document.getElementById('th_out').innerText = code;
         }
 
+        // ОБНОВЛЕННЫЙ РАСЧЕТ ФАСКИ (С учетом начального и конечного диаметра)
         function calcChamfer() {
-            let d = parseFloat(document.getElementById('ch_d').value);
+            let d_start = parseFloat(document.getElementById('ch_d_start').value);
+            let d_end = parseFloat(document.getElementById('ch_d_end').value);
             let depth = parseFloat(document.getElementById('ch_depth').value);
             let angle = parseFloat(document.getElementById('ch_angle').value);
             let r = parseFloat(document.getElementById('ch_r').value);
             let method = document.querySelector('input[name="ch_method"]:checked').value;
             let isOut = document.querySelector('input[name="ch_type"]:checked').value === "out";
             
-            if(isNaN(d) || isNaN(depth) || isNaN(angle) || isNaN(r)) return alert("Введите числа!");
+            if(isNaN(d_start) || isNaN(d_end) || isNaN(depth) || isNaN(angle) || isNaN(r)) return alert("Введите числа!");
             let angleRad = angle * Math.PI / 180;
             let halfAngleRad = angleRad / 2;
-            let code = `--- ФАСКА ${angle}° (Глубина ${depth}мм) ---\nТип: ${isOut ? 'Наружная' : 'Внутренняя'}\n\n`;
+            
+            // Для внутренней фаски начальный диаметр меньше конечного (расширение)
+            // Для наружной - наоборот (сужение)
+            let delta_d = isOut ? (d_start - d_end) : (d_end - d_start);
+            let actual_depth = delta_d / 2 / Math.tan(angleRad); // Фактическая глубина по Z
+
+            let code = `--- ФАСКА ${angle}° ---\n`;
+            code += `Тип: ${isOut ? 'Наружная' : 'Внутренняя'}\n`;
+            code += `От D${d_start} до D${d_end}\n\n`;
 
             if (method === "simple") {
                 let delta_z = r * (1 - Math.tan(halfAngleRad));
                 let delta_x = 2 * delta_z;
-                let x_start = isOut ? (d - 2 * depth) : (d + 2 * depth);
-                let z_end = depth;
-                let x_comp = x_start + (isOut ? delta_x : -delta_x);
-                let z_comp = -delta_z;
-                code += `[УПРОЩЕННЫЙ РАСЧЕТ]\nНачальный диаметр: ${x_comp.toFixed(3)}\nГлубина с учетом R: ${z_comp.toFixed(3)}\n\nG0 X${(d+2).toFixed(1)} Z2.\nG1 Z0 F0.15\nG1 X${x_comp.toFixed(3)} Z${z_comp.toFixed(3)}\nG1 X${isOut ? d.toFixed(2) : (d - 2*depth).toFixed(2)} Z${z_end.toFixed(2)}\n`;
+                
+                let x_start_comp = isOut ? (d_start - 2 * actual_depth + delta_x) : (d_start + 2 * actual_depth - delta_x);
+                // Упрощенный расчет для внутренней: мы идем от d_start (меньший) к d_end (больший)
+                
+                code += `[УПРОЩЕННЫЙ РАСЧЕТ]\n`;
+                code += `Начальный диаметр с учетом R: ${(d_start + (isOut?-delta_x:delta_x)).toFixed(3)}\n`;
+                code += `Глубина с учетом R: ${(-delta_z).toFixed(3)}\n\n`;
+                
+                if(isOut) {
+                    code += `G0 X${(d_start+2).toFixed(1)} Z2.\n`;
+                    code += `G1 Z0 F0.15\n`;
+                    code += `G1 X${(d_end + delta_x).toFixed(3)} Z${(-delta_z).toFixed(3)}\n`;
+                    code += `G1 X${d_end.toFixed(2)} Z${(-depth).toFixed(2)}\n`;
+                } else {
+                    // Внутренняя фаска: от отверстия d_start расширяемся к d_end
+                    code += `G0 X${(d_start-2).toFixed(1)} Z2.\n`;
+                    code += `G1 Z0 F0.15\n`;
+                    code += `G1 X${(d_start + delta_x).toFixed(3)} Z${(-delta_z).toFixed(3)}\n`;
+                    code += `G1 X${d_end.toFixed(2)} Z${(-depth).toFixed(2)}\n`;
+                }
             } else {
+                // ТОЧНЫЙ РАСЧЕТ
                 let z_tangent = depth + r - (r * Math.tan(halfAngleRad));
-                let x_tangent = d - 2 * depth - 2 * r * (1 - Math.cos(angleRad));
-                code += `[ТОЧНЫЙ РАСЧЕТ (Центр R)]\nНачальный диаметр с учетом радиуса: ${x_tangent.toFixed(3)} мм\nГлубина с учетом радиуса: ${z_tangent.toFixed(3)} мм\n\nG0 X${(d + 2).toFixed(1)} Z2.\nG0 X${x_tangent.toFixed(3)}\nG1 Z0 F0.07\nG1 X${d.toFixed(3)} Z-${z_tangent.toFixed(3)}\n`;
+                let x_tangent = isOut ? (d_start - 2 * depth - 2 * r * (1 - Math.cos(angleRad))) : (d_start + 2 * depth + 2 * r * (1 - Math.cos(angleRad)));
+
+                code += `[ТОЧНЫЙ РАСЧЕТ (Центр R)]\n`;
+                code += `Начальный диаметр с учетом радиуса: ${x_tangent.toFixed(3)} мм\n`;
+                code += `Глубина с учетом радиуса: ${z_tangent.toFixed(3)} мм\n\n`;
+                
+                if(isOut) {
+                    code += `G0 X${(d_start + 2).toFixed(1)} Z2.\n`;
+                    code += `G0 X${x_tangent.toFixed(3)}\n`;
+                    code += `G1 Z0 F0.07\n`;
+                    code += `G1 X${d_end.toFixed(3)} Z-${z_tangent.toFixed(3)}\n`;
+                } else {
+                    code += `G0 X${(d_start - 2).toFixed(1)} Z2.\n`;
+                    code += `G0 X${x_tangent.toFixed(3)}\n`;
+                    code += `G1 Z0 F0.07\n`;
+                    code += `G1 X${d_end.toFixed(3)} Z-${z_tangent.toFixed(3)}\n`;
+                }
             }
             document.getElementById('ch_out').innerText = code;
         }
@@ -584,20 +592,27 @@
             document.getElementById('fl_out').innerText = code;
         }
 
-        // 5. ШЕСТИГРАННИК
+        // ОБНОВЛЕННЫЙ ШЕСТИГРАННИК (С черновыми проходами)
         function calcHex() {
             let d_work = parseFloat(document.getElementById('hx_work_d').value); 
             let size_key = parseFloat(document.getElementById('hx_key').value);   
-            let d_tool = parseFloat(document.getElementById('hx_tool').value);    
+            let step_x = parseFloat(document.getElementById('hx_step_x').value); 
             let length = parseFloat(document.getElementById('hx_len').value);     
             let feed = parseFloat(document.getElementById('hx_feed').value);      
             let rpm = parseFloat(document.getElementById('hx_rpm').value);        
 
-            if(isNaN(d_work) || isNaN(size_key) || isNaN(d_tool) || isNaN(length) || isNaN(feed) || isNaN(rpm)) return alert("Введите числа!");
+            if(isNaN(d_work) || isNaN(size_key) || isNaN(step_x) || isNaN(length) || isNaN(feed) || isNaN(rpm)) return alert("Введите числа!");
             if (size_key >= d_work) return alert("Ошибка: Размер под ключ должен быть меньше диаметра заготовки!");
+            if (step_x <= 0) return alert("Припуск должен быть больше 0!");
 
             let r_in = size_key / 2;
-            let x_face = size_key;
+            // Начальный X - диаметр заготовки (радиус), Конечный X - размер под ключ.
+            // Нам нужно снять материал от d_work/2 до r_in.
+            // Количество проходов по X
+            let depth_total = (d_work / 2) - r_in;
+            let passes = Math.ceil(depth_total / step_x);
+            let actual_step = depth_total / passes;
+
             let y_start = r_in + 2; 
             let y_end = -r_in - 2;  
 
@@ -609,10 +624,10 @@
             
             code += `O2991 (ШЕСТИГРАННИК D${d_work} ПОД КЛЮЧ ${size_key}) \n`;
             code += `; ---- ИНСТРУМЕНТЫ ----\n`;
-            code += `T8989 (Фреза D${d_tool})\n`;
+            code += `T8989 (Фреза D16)\n`;
             code += `G97 S${rpm} M3\n`;
             code += `G98\n`;
-            code += `M50 (Второй насос СОЖ)\n\n`;
+            code += `M35 (Включение оси C)\n\n`; // Заменено на M35
             
             code += `; ---- ПРИВЯЗКА ----\n`;
             code += `G28 H0\n`;
@@ -629,22 +644,23 @@
             code += `  G0 C#101 (Поворот на угол #101)\n`;
             code += `  M84 (Зажим оси C)\n\n`;
             
-            code += `  ; 1. Подвод к началу фрезерования (по Z)\n`;
-            code += `  G0 Z-${length.toFixed(1)}\n\n`;
-            
-            code += `  ; 2. Подвод по X (ПРИВЯЗКА ПО ТОРЦУ ФРЕЗЫ)\n`;
-            code += `  G0 X${x_face.toFixed(3)}\n\n`;
-            
-            code += `  ; 3. Подвод по Y (вне заготовки)\n`;
-            code += `  G0 Y${y_start.toFixed(1)}\n\n`;
-            
-            code += `  ; 4. Фрезерование (проход по Y)\n`;
-            code += `  G1 Y${y_end.toFixed(1)} F${feed}\n\n`;
-            
-            code += `  ; 5. Отвод\n`;
-            code += `  G0 X${(d_work + 5).toFixed(1)} (Отвод по X)\n`;
-            code += `  G0 Y0 (Отвод по Y)\n\n`;
-            
+            // ЦИКЛ ПРОХОДОВ ПО X ДЛЯ КАЖДОЙ ГРАНИ
+            let current_x = d_work; // Начинаем с диаметра заготовки
+            for (let i = 0; i < passes; i++) {
+                current_x -= actual_step * 2; // Уменьшаем диаметр
+                let current_radius = current_x / 2;
+                let current_y_start = current_radius + 2;
+                let current_y_end = -current_radius - 2;
+
+                code += `  ; Проход ${i+1} (X${current_x.toFixed(2)})\n`;
+                code += `  G0 Z-${length.toFixed(1)}\n`;
+                code += `  G0 X${current_x.toFixed(3)}\n`; // Подвод по X
+                code += `  G0 Y${current_y_start.toFixed(1)}\n`; // Подвод по Y
+                code += `  G1 Y${current_y_end.toFixed(1)} F${feed}\n`; // Фрезеровка
+                code += `  G0 X${(d_work + 5).toFixed(1)} (Отвод по X)\n`;
+                code += `  G0 Y0 (Отвод по Y)\n\n`;
+            }
+
             code += `  M85 (Разжим оси C)\n`;
             code += `  G0 Z50. (Подъем по Z)\n\n`;
             
@@ -667,32 +683,6 @@
             let rad = (angle / 2) * (Math.PI / 180);
             let depth = (d / 2) / Math.tan(rad);
             document.getElementById('dr_out').innerText = `Диаметр: ${d} мм\nУгол: ${angle}°\n\nГлубина конуса: ${depth.toFixed(3)} мм\n\n(Для полного сверления добавьте рабочую длину)`;
-        }
-
-        function calcModes() {
-            let d = parseFloat(document.getElementById('md_d').value);
-            let teeth = parseInt(document.getElementById('md_z').value);
-            let vc = parseFloat(document.getElementById('md_mat').value);
-            if(isNaN(d) || isNaN(teeth) || isNaN(vc)) return alert("Введите числа!");
-            let fz = vc > 300 ? 0.1 : (vc > 200 ? 0.05 : 0.04); 
-            let rpm = Math.round((vc * 1000) / (Math.PI * d));
-            let feed = Math.round(rpm * fz * teeth);
-            document.getElementById('md_out').innerText = `ОБОРОТЫ S: ${rpm} об/мин\nПОДАЧА F: ${feed} мм/мин\n\nG97 S${rpm} M3\nG1 X.. Y.. F${feed}`;
-        }
-
-        function calcBore() {
-            let d = parseFloat(document.getElementById('br_d').value);
-            let size = parseFloat(document.getElementById('br_size').value);
-            let minD = parseFloat(document.getElementById('br_min').value);
-            if(isNaN(d) || isNaN(size) || isNaN(minD)) return alert("Введите числа!");
-            let passD = 2 * size; 
-            let result = `Диаметр отверстия: ${d} мм\nРазмер резца (вылет): ${size} мм\n\n`;
-            if (d < passD) {
-                result += `❌ ВНИМАНИЕ! Резец не пролезет.\nМинимальный диаметр для этого резца: ${passD} мм`;
-            } else {
-                result += `✅ Резец пролезет.\nЗапас по диаметру: ${(d - passD).toFixed(2)} мм\nМакс. глубина резания: ${((d - minD) / 2).toFixed(3)} мм`;
-            }
-            document.getElementById('br_out').innerText = result;
         }
 
         function calcCoord(mode) {
