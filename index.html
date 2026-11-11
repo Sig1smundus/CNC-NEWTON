@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>CNC-NEWTON</title> <!-- Изменено название -->
+    <style>
+        :root {
+            --bg: #f0f0f0; --card: #e6e6e6; --accent: #ff6b35; --text: #333;
+            --text-secondary: #666; --border: #ccc; --input-bg: transparent;
+            --code-bg: #222; --code-text: #4af626; --header-bg: #fff;
+            --table-border: #ccc; --table-bg: #fff;
+        }
+        body.dark-theme {
+            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --text-secondary: #aaa;
+            --border: #444; --input-bg: #2a2a2a; --code-bg: #000; --code-text: #4af626;
+            --header-bg: #1e1e1e; --table-border: #444; --table-bg: #1e1e1e;
+        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background-color: var(--bg); color: var(--text); padding-bottom: 80px; transition: background-color 0.3s, color 0.3s; }
+        
+        header { background-color: var(--header-bg); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); transition: background-color 0.3s; }
+        .logo { font-weight: 900; font-size: 22px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+        .theme-toggle { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
+        
+        .tabs { display: flex; overflow-x: auto; background: var(--header-bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border); transition: background-color 0.3s; scroll-behavior: smooth; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { flex: 1; padding: 15px 20px; text-align: center; color: var(--text-secondary); white-space: nowrap; cursor: pointer; font-size: 15px; font-weight: 500; transition: all 0.2s; background: transparent; }
+        .tab.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: var(--card); font-weight: bold; }
+
+        .content { padding: 15px; display: none; }
+        .content.active { display: block; }
+        
+        .settings-group { background: var(--card); border-radius: 8px; padding: 15px; margin-bottom: 15px; transition: background-color 0.3s; }
+        .group-title { font-size: 13px; color: var(--text-secondary); margin-bottom: 15px; }
+        
+        .input-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-bottom: 10px; }
+        .input-row label { font-size: 16px; color: var(--text); flex: 1; }
+        .input-row input, .input-row select { border: none; background: var(--input-bg); text-align: right; font-size: 18px; width: 100px; outline: none; color: var(--text); border-radius: 4px; padding: 2px; }
+        .input-row .unit { font-size: 14px; color: var(--text-secondary); width: 40px; text-align: right; }
+
+        .radio-group { display: flex; gap: 20px; margin: 15px 0; flex-wrap: wrap; }
+        .radio-label { display: flex; align-items: center; font-size: 16px; color: var(--text); }
+        .radio-label input { margin-right: 8px; accent-color: var(--accent); width: 18px; height: 18px; }
+
+        button.calc-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--accent); color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
+        button.calc-btn:active { opacity: 0.8; }
+
+        .output { background: var(--code-bg); color: var(--code-text); padding: 15px; border-radius: 8px; font-family: "Courier New", monospace; font-size: 14px; white-space: pre-wrap; min-height: 80px; }
+
+        .drill-img-container { text-align: center; padding: 20px; background: var(--card); border-radius: 8px; margin-bottom: 15px; }
+        .drill-img-container svg path { fill: var(--text-secondary); }
+
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--table-bg); }
+        th, td { border: 1px solid var(--table-border); padding: 8px; text-align: center; color: var(--text); }
+        th { background-color: var(--card); font-weight: bold; }
+        .row-2 { display: flex; gap: 10px; }
+        .row-2 .input-row { flex: 1; }
+
+        .search-container { position: relative; margin-bottom: 15px; }
+        .search-container input { width: 100%; padding: 10px 35px 10px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--header-bg); color: var(--text); font-size: 16px; outline: none; }
+        .search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 18px; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <!-- ИЗМЕНЕНО НАЗВАНИЕ -->
+        <div class="logo">CNC-NEWTON</div>
+        <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <div class="tabs" id="tabsContainer">
+        <div class="tab active" id="tab-thread" onclick="switchTab(event, 'thread')">Резьба</div>
+        <div class="tab" id="tab-chamfer" onclick="switchTab(event, 'chamfer')">Фаска</div>
+        <div class="tab" id="tab-arcs" onclick="switchTab(event, 'arcs')">Дуги</div>
+        <div class="tab" id="tab-fillet" onclick="switchTab(event, 'fillet')">Галтель+Фаска</div>
+        <div class="tab" id="tab-hex" onclick="switchTab(event, 'hex')">Шестигранник</div>
+        <div class="tab" id="tab-drill" onclick="switchTab(event, 'drill')">Конус</div>
+        <div class="tab" id="tab-modes" onclick="switchTab(event, 'modes')">Режимы</div>
+        <div class="tab" id="tab-bore" onclick="switchTab(event, 'bore')">Расточка</div>
+        <div class="tab" id="tab-coord" onclick="switchTab(event, 'coord')">Координаты</div>
+        <div class="tab" id="tab-angle" onclick="switchTab(event, 'angle')">Углы</div>
+        <div class="tab" id="tab-ref" onclick="switchTab(event, 'ref')">Справочник</div>
+    </div>
+
+    <!-- 1. РЕЗЬБА -->
+    <div id="thread" class="content active">
+        <div class="settings-group">
+            <div class="search-container">
+                <input type="text" id="th_search" onkeyup="filterThreadTemplates()" placeholder="Поиск (напр. M30 мелкий)...">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="input-row" style="margin-bottom: 20px;">
+                <label>Шаблон</label>
+                <select id="th_template" onchange="applyThreadTemplate()" style="width: 200px;">
+                    <option value="">-- Выбрать --</option>
+                </select>
+            </div>
+
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="th_type" value="out" checked onclick="updateToleranceOptions('out')"> Наружная</label>
+                <label class="radio-label"><input type="radio" name="th_type" value="in" onclick="updateToleranceOptions('in')"> Внутренняя</label>
+            </div>
+            <div class="input-row"><label>Диаметр</label><input type="number" id="th_d" value="22" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Шаг</label><input type="number" id="th_p" value="2.5" step="0.1"><div class="unit">мм</div></div>
+            
+            <div class="input-row" style="margin-top: 15px; border-bottom: none;"><label style="font-weight:bold; color:var(--accent);">Допуск</label></div>
+            <div class="row-2">
+                <div class="input-row">
+                    <label>Квалитет</label>
+                    <select id="th_tol_class" style="width: 80px;">
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6" selected>6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+                <div class="input-row">
+                    <label>Поле</label>
+                    <select id="th_tol_field" style="width: 80px;">
+                        <option value="h">h</option>
+                        <option value="g">g</option>
+                        <option value="e">e</option>
+                        <option value="f">f</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calcThread()">Рассчитать G76</button>
+        <div id="th_out" class="output">Здесь будет G-код...</div>
+    </div>
+
+    <!-- 2. ФАСКА -->
+    <div id="chamfer" class="content">
+        <div class="settings-group">
+            <div class="group-title">Параметры фаски</div>
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="ch_type" value="out" checked> Наружная</label>
+                <label class="radio-label"><input type="radio" name="ch_type" value="in"> Внутренняя</label>
+            </div>
+            <div class="input-row"><label>Конечный диаметр</label><input type="number" id="ch_d" value="20" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Глубина (катет)</label><input type="number" id="ch_depth" value="0.5" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Угол фаски</label><input type="number" id="ch_angle" value="45" step="1"><div class="unit">°</div></div>
+            <div class="input-row" style="margin-top: 15px; border-bottom: none;"><label style="font-weight:bold; color:var(--accent);">Расчет</label></div>
+            <div class="input-row"><label>Радиус пластины</label><input type="number" id="ch_r" value="0.4" step="0.1"><div class="unit">мм</div></div>
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="ch_method" value="simple" checked> Упрощенный</label>
+                <label class="radio-label"><input type="radio" name="ch_method" value="exact"> Точный</label>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calcChamfer()">Рассчитать</button>
+        <div id="ch_out" class="output">Здесь будет результат...</div>
+    </div>
+
+    <!-- 3. ДУГИ -->
+    <div id="arcs" class="content">
+        <div class="settings-group">
+            <div class="group-title">Параметры скругления</div>
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="arc_type" value="out" checked> Наружное</label>
+                <label class="radio-label"><input type="radio" name="arc_type" value="in"> Внутреннее</label>
+            </div>
+            <div class="input-row"><label>Конечный диаметр</label><input type="number" id="arc_d" value="20" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Радиус скругления</label><input type="number" id="arc_r" value="1" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Радиус пластины</label><input type="number" id="arc_tool_r" value="0.4" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row" style="margin-top: 15px;">
+                <label>Код дуги</label>
+                <select id="arc_gcode" style="width: 100px;">
+                    <option value="G2">G2 (по часовой)</option>
+                    <option value="G3" selected>G3 (против часовой)</option>
+                </select>
+            </div>
+            <div class="radio-group" style="margin-top: 15px;">
+                <label class="radio-label"><input type="radio" name="arc_method" value="no_comp" checked> Без коррекции (учет R)</label>
+                <label class="radio-label"><input type="radio" name="arc_method" value="g41"> С коррекцией (G41/G42)</label>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calcArc()">Рассчитать</button>
+        <div id="arc_out" class="output">Здесь будет G-код...</div>
+    </div>
+
+    <!-- 4. ГАЛТЕЛЬ + ФАСКА -->
+    <div id="fillet" class="content">
+        <div class="settings-group">
+            <div class="group-title">Параметры перехода</div>
+            <div class="input-row"><label>Меньший диаметр</label><input type="number" id="fl_d1" value="20" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Больший диаметр</label><input type="number" id="fl_d2" value="25" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Радиус галтели</label><input type="number" id="fl_r" value="0.73" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Угол фаски</label><input type="number" id="fl_angle" value="45" step="1"><div class="unit">°</div></div>
+            <div class="input-row"><label>Радиус пластины</label><input type="number" id="fl_tool_r" value="0.4" step="0.1"><div class="unit">мм</div></div>
+        </div>
+        <button class="calc-btn" onclick="calcFilletChamfer()">Рассчитать переход</button>
+        <div id="fl_out" class="output">Здесь будет G-код...</div>
+    </div>
+
+    <!-- 5. ШЕСТИГРАННИК -->
+    <div id="hex" class="content">
+        <div class="settings-group">
+            <div class="group-title">Параметры шестигранника (радиальная фреза)</div>
+            <div class="input-row"><label>Диаметр заготовки</label><input type="number" id="hx_work_d" value="50" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Размер "под ключ"</label><input type="number" id="hx_key" value="36" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Диаметр фрезы</label><input type="number" id="hx_tool" value="16" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Длина шестигранника</label><input type="number" id="hx_len" value="14" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Подача (F)</label><input type="number" id="hx_feed" value="60" step="1"><div class="unit">мм/мин</div></div>
+            <div class="input-row"><label>Обороты шпинделя</label><input type="number" id="hx_rpm" value="400" step="10"><div class="unit">об/мин</div></div>
+        </div>
+        <button class="calc-btn" onclick="calcHex()">Рассчитать G-код (Цикл)</button>
+        <div id="hx_out" class="output">Здесь будет G-код...</div>
+    </div>
+
+    <!-- 6. КОНУС СВЕРЛА -->
+    <div id="drill" class="content">
+        <div class="settings-group">
+            <div class="input-row"><label>Диаметр сверла</label><input type="number" id="dr_d" value="10" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Угол сверла</label><input type="number" id="dr_angle" value="118" step="1"><div class="unit">°</div></div>
+        </div>
+        <div class="drill-img-container">
+            <svg viewBox="0 0 100 100"><path d="M 20,30 L 80,30 L 80,40 L 20,40 Z" /><path d="M 10,35 L 20,20 L 20,50 Z" /></svg>
+        </div>
+        <button class="calc-btn" onclick="calcDrillCone()">Рассчитать глубину</button>
+        <div id="dr_out" class="output">Глубина конуса: -</div>
+    </div>
+
+    <!-- 7. РЕЖИМЫ -->
+    <div id="modes" class="content">
+        <div class="settings-group">
+            <div class="group-title">Калькулятор режимов</div>
+            <div class="input-row"><label>Диаметр</label><input type="number" id="md_d" value="6"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Зубья</label><input type="number" id="md_z" value="2"><div class="unit">шт</div></div>
+            <div class="input-row"><label>Скорость (Vc)</label>
+                <select id="md_mat">
+                    <option value="300">300 (Алюминий)</option>
+                    <option value="120">120 (Сталь)</option>
+                    <option value="200">200 (Латунь)</option>
+                    <option value="400">400 (Дерево)</option>
+                </select>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calcModes()">Рассчитать S и F</button>
+        <div id="md_out" class="output">Обороты S: - \nПодача F: -</div>
+    </div>
+
+    <!-- 8. РАСТОЧКА -->
+    <div id="bore" class="content">
+        <div class="settings-group">
+            <div class="group-title">Параметры расточки</div>
+            <div class="input-row"><label>Диаметр отверстия</label><input type="number" id="br_d" value="20" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Размер с пластиной</label><input type="number" id="br_size" value="12" step="0.1"><div class="unit">мм</div></div>
+            <div class="input-row"><label>Мин. диаметр</label><input type="number" id="br_min" value="10" step="0.1"><div class="unit">мм</div></div>
+        </div>
+        <button class="calc-btn" onclick="calcBore()">Рассчитать</button>
+        <div id="br_out" class="output">Здесь будет результат...</div>
+    </div>
+
+    <!-- 9. КООРДИНАТЫ -->
+    <div id="coord" class="content">
+        <div class="settings-group">
+            <div class="group-title">Декартова СК (X, Y)</div>
+            <div class="row-2">
+                <div class="input-row"><label>X</label><input type="number" id="cx" value="10"><div class="unit">мм</div></div>
+                <div class="input-row"><label>Y</label><input type="number" id="cy" value="10"><div class="unit">мм</div></div>
+            </div>
+        </div>
+        <div class="settings-group">
+            <div class="group-title">Полярная СК (Радиус, Угол)</div>
+            <div class="row-2">
+                <div class="input-row"><label>Радиус</label><input type="number" id="cr" value="0"><div class="unit">мм</div></div>
+                <div class="input-row"><label>Угол</label><input type="number" id="cang" value="0"><div class="unit">°</div></div>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calcCoord('toPolar')">X,Y -> Радиус, Угол</button>
+        <button class="calc-btn" style="background: #555;" onclick="calcCoord('toCart')">Радиус, Угол -> X,Y</button>
+        <div id="coord_out" class="output">Результат...</div>
+    </div>
+
+    <!-- 10. УГЛЫ -->
+    <div id="angle" class="content">
+        <div class="settings-group">
+            <div class="group-title">Градусы в десятичной системе</div>
+            <div class="input-row"><label>Градусы</label><input type="number" id="a_deg" value="45.5" step="0.1"><div class="unit">°</div></div>
+        </div>
+        <div class="settings-group">
+            <div class="group-title">Градусы, Минуты, Секунды (ГМС)</div>
+            <div class="row-2">
+                <div class="input-row"><label>°</label><input type="number" id="a_d" value="45"></div>
+                <div class="input-row"><label>'</label><input type="number" id="a_m" value="30"></div>
+                <div class="input-row"><label>"</label><input type="number" id="a_s" value="0"></div>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calcAngle('toGMS')">Десятичные -> ГМС</button>
+        <button class="calc-btn" style="background: #555;" onclick="calcAngle('toDec')">ГМС -> Десятичные</button>
+        <div id="ang_out" class="output">Результат...</div>
+    </div>
+
+    <!-- 11. СПРАВОЧНИК -->
+    <div id="ref" class="content">
+        <div class="settings-group">
+            <div class="group-title">Глубина центровки (ГОСТ)</div>
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>Центровка</th><th>Общая глубина, мм</th><th>Глубина конуса, мм</th></tr></thead>
+                    <tbody>
+                        <tr><td>A1</td><td>2.27</td><td>0.97</td></tr>
+                        <tr><td>A1.6</td><td>3.52</td><td>0.48</td></tr>
+                        <tr><td>A2</td><td>4.45</td><td>1.95</td></tr>
+                        <tr><td>A2.5</td><td>5.52</td><td>2.42</td></tr>
+                        <tr><td>A3.15</td><td>6.97</td><td>3.07</td></tr>
+                        <tr><td>A4</td><td>8.9</td><td>3.9</td></tr>
+                        <tr><td>A6.3</td><td>13.98</td><td>5.98</td></tr>
+                        <tr><td>A10</td><td>22.5</td><td>9.7</td></tr>
+                        <tr><td>A12</td><td>26.2</td><td>11.6</td></tr>
+                        <tr><td>A16</td><td>34.7</td><td>9.7</td></tr>
+                        <tr><td>A20</td><td>44.4</td><td>19.4</td></tr>
+                        <tr><td>A25</td><td>56</td><td>24</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- БАЗА ШАБЛОНОВ РЕЗЬБ ---
+        const THREAD_TEMPLATES = [
+            { d: 2, p: 0.4, type: "Стандартный" }, { d: 2, p: 0.25, type: "Мелкий" },
+            { d: 2.5, p: 0.45, type: "Стандартный" }, { d: 2.5, p: 0.35, type: "Мелкий" },
+            { d: 3, p: 0.5, type: "Стандартный" }, { d: 3, p: 0.35, type: "Мелкий" },
+            { d: 4, p: 0.7, type: "Стандартный" }, { d: 4, p: 0.5, type: "Мелкий" },
+            { d: 5, p: 0.8, type: "Стандартный" }, { d: 5, p: 0.5, type: "Мелкий" },
+            { d: 6, p: 1.0, type: "Стандартный" }, { d: 6, p: 0.75, type: "Мелкий" }, { d: 6, p: 0.5, type: "Мелкий" },
+            { d: 8, p: 1.25, type: "Стандартный" }, { d: 8, p: 1.0, type: "Мелкий" }, { d: 8, p: 0.75, type: "Мелкий" }, { d: 8, p: 0.5, type: "Мелкий" },
+            { d: 10, p: 1.5, type: "Стандартный" }, { d: 10, p: 1.25, type: "Мелкий" }, { d: 10, p: 1.0, type: "Мелкий" }, { d: 10, p: 0.75, type: "Мелкий" }, { d: 10, p: 0.5, type: "Мелкий" },
+            { d: 12, p: 1.75, type: "Стандартный" }, { d: 12, p: 1.5, type: "Мелкий" }, { d: 12, p: 1.25, type: "Мелкий" }, { d: 12, p: 1.0, type: "Мелкий" }, { d: 12, p: 0.75, type: "Мелкий" }, { d: 12, p: 0.5, type: "Мелкий" },
+            { d: 14, p: 2.0, type: "Стандартный" }, { d: 14, p: 1.5, type: "Мелкий" }, { d: 14, p: 1.25, type: "Мелкий" }, { d: 14, p: 1.0, type: "Мелкий" },
+            { d: 16, p: 2.0, type: "Стандартный" }, { d: 16, p: 1.5, type: "Мелкий" }, { d: 16, p: 1.0, type: "Мелкий" },
+            { d: 18, p: 2.5, type: "Стандартный" }, { d: 18, p: 2.0, type: "Мелкий" }, { d: 18, p: 1.5, type: "Мелкий" }, { d: 18, p: 1.0, type: "Мелкий" },
+            { d: 20, p: 2.5, type: "Стандартный" }, { d: 20, p: 2.0, type: "Мелкий" }, { d: 20, p: 1.5, type: "Мелкий" }, { d: 20, p: 1.0, type: "Мелкий" },
+            { d: 22, p: 2.5, type: "Стандартный" }, { d: 22, p: 2.0, type: "Мелкий" }, { d: 22, p: 1.5, type: "Мелкий" }, { d: 22, p: 1.0, type: "Мелкий" },
+            { d: 24, p: 3.0, type: "Стандартный" }, { d: 24, p: 2.0, type: "Мелкий" }, { d: 24, p: 1.5, type: "Мелкий" }, { d: 24, p: 1.0, type: "Мелкий" },
+            { d: 27, p: 3.0, type: "Стандартный" }, { d: 27, p: 2.0, type: "Мелкий" }, { d: 27, p: 1.5, type: "Мелкий" }, { d: 27, p: 1.0, type: "Мелкий" },
+            { d: 30, p: 3.5, type: "Стандартный" }, { d: 30, p: 3.0, type: "Мелкий" }, { d: 30, p: 2.0, type: "Мелкий" }, { d: 30, p: 1.5, type: "Мелкий" }, { d: 30, p: 1.0, type: "Мелкий" },
+            { d: 33, p: 3.5, type: "Стандартный" }, { d: 33, p: 3.0, type: "Мелкий" }, { d: 33, p: 2.0, type: "Мелкий" }, { d: 33, p: 1.5, type: "Мелкий" },
+            { d: 36, p: 4.0, type: "Стандартный" }, { d: 36, p: 3.0, type: "Мелкий" }, { d: 36, p: 2.0, type: "Мелкий" }, { d: 36, p: 1.5, type: "Мелкий" },
+            { d: 39, p: 4.0, type: "Стандартный" }, { d: 39, p: 3.0, type: "Мелкий" }, { d: 39, p: 2.0, type: "Мелкий" }, { d: 39, p: 1.5, type: "Мелкий" },
+            { d: 42, p: 4.5, type: "Стандартный" }, { d: 42, p: 4.0, type: "Мелкий" }, { d: 42, p: 3.0, type: "Мелкий" }, { d: 42, p: 2.0, type: "Мелкий" }, { d: 42, p: 1.5, type: "Мелкий" },
+            { d: 45, p: 4.5, type: "Стандартный" }, { d: 45, p: 4.0, type: "Мелкий" }, { d: 45, p: 3.0, type: "Мелкий" }, { d: 45, p: 2.0, type: "Мелкий" }, { d: 45, p: 1.5, type: "Мелкий" },
+            { d: 48, p: 5.0, type: "Стандартный" }, { d: 48, p: 4.0, type: "Мелкий" }, { d: 48, p: 3.0, type: "Мелкий" }, { d: 48, p: 2.0, type: "Мелкий" }, { d: 48, p: 1.5, type: "Мелкий" },
+            { d: 52, p: 5.0, type: "Стандартный" }, { d: 52, p: 4.0, type: "Мелкий" }, { d: 52, p: 3.0, type: "Мелкий" }, { d: 52, p: 2.0, type: "Мелкий" }, { d: 52, p: 1.5, type: "Мелкий" },
+            { d: 56, p: 5.5, type: "Стандартный" }, { d: 56, p: 4.0, type: "Мелкий" }, { d: 56, p: 3.0, type: "Мелкий" }, { d: 56, p: 2.0, type: "Мелкий" }, { d: 56, p: 1.5, type: "Мелкий" },
+            { d: 60, p: 5.5, type: "Стандартный" }, { d: 60, p: 4.0, type: "Мелкий" }, { d: 60, p: 3.0, type: "Мелкий" }, { d: 60, p: 2.0, type: "Мелкий" }, { d: 60, p: 1.5, type: "Мелкий" },
+            { d: 64, p: 6.0, type: "Стандартный" }, { d: 64, p: 4.0, type: "Мелкий" }, { d: 64, p: 3.0, type: "Мелкий" }, { d: 64, p: 2.0, type: "Мелкий" }, { d: 64, p: 1.5, type: "Мелкий" },
+            { d: 68, p: 6.0, type: "Стандартный" }, { d: 68, p: 4.0, type: "Мелкий" }, { d: 68, p: 3.0, type: "Мелкий" }, { d: 68, p: 2.0, type: "Мелкий" }, { d: 68, p: 1.5, type: "Мелкий" },
+            { d: 72, p: 6.0, type: "Стандартный" }, { d: 72, p: 4.0, type: "Мелкий" }, { d: 72, p: 3.0, type: "Мелкий" }, { d: 72, p: 2.0, type: "Мелкий" }, { d: 72, p: 1.5, type: "Мелкий" },
+            { d: 76, p: 6.0, type: "Стандартный" }, { d: 76, p: 4.0, type: "Мелкий" }, { d: 76, p: 3.0, type: "Мелкий" }, { d: 76, p: 2.0, type: "Мелкий" }, { d: 76, p: 1.5, type: "Мелкий" },
+            { d: 80, p: 6.0, type: "Стандартный" }, { d: 80, p: 4.0, type: "Мелкий" }, { d: 80, p: 3.0, type: "Мелкий" }, { d: 80, p: 2.0, type: "Мелкий" }, { d: 80, p: 1.5, type: "Мелкий" },
+            { d: 85, p: 6.0, type: "Стандартный" }, { d: 85, p: 4.0, type: "Мелкий" }, { d: 85, p: 3.0, type: "Мелкий" }, { d: 85, p: 2.0, type: "Мелкий" }, { d: 85, p: 1.5, type: "Мелкий" },
+            { d: 90, p: 6.0, type: "Стандартный" }, { d: 90, p: 4.0, type: "Мелкий" }, { d: 90, p: 3.0, type: "Мелкий" }, { d: 90, p: 2.0, type: "Мелкий" }, { d: 90, p: 1.5, type: "Мелкий" }
+        ];
+
+        function initThreadTemplates() {
+            let select = document.getElementById('th_template');
+            THREAD_TEMPLATES.forEach(item => {
+                let opt = document.createElement('option');
+                opt.value = `${item.d},${item.p}`;
+                opt.text = `M${item.d} x ${item.p} (${item.type})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterThreadTemplates() {
+            let input = document.getElementById('th_search').value.toLowerCase();
+            let select = document.getElementById('th_template');
+            select.innerHTML = '<option value="">-- Выбрать --</option>';
+            
+            THREAD_TEMPLATES.forEach(item => {
+                let text = `M${item.d} x ${item.p} (${item.type})`;
+                if (text.toLowerCase().includes(input)) {
+                    let opt = document.createElement('option');
+                    opt.value = `${item.d},${item.p}`;
+                    opt.text = text;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function applyThreadTemplate() {
+            let val = document.getElementById('th_template').value;
+            if (!val) return;
+            let [d, p] = val.split(',');
+            document.getElementById('th_d').value = d;
+            document.getElementById('th_p').value = p;
+        }
+
+        // --- ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            body.classList.toggle('dark-theme');
+            if (body.classList.contains('dark-theme')) {
+                btn.innerText = '☀️';
+                localStorage.setItem('sundukTheme', 'dark');
+            } else {
+                btn.innerText = '🌙';
+                localStorage.setItem('sundukTheme', 'light');
+            }
+        }
+
+        window.onload = function() {
+            initThreadTemplates(); // Заполняем шаблоны
+
+            if (localStorage.getItem('sundukTheme') === 'dark') {
+                document.body.classList.add('dark-theme');
+                document.getElementById('themeBtn').innerText = '☀️';
+            }
+            let activeTab = document.querySelector('.tab.active');
+            if(activeTab) {
+                let container = document.getElementById('tabsContainer');
+                let scrollLeft = activeTab.offsetLeft - (container.offsetWidth / 2) + (activeTab.offsetWidth / 2);
+                container.scrollLeft = scrollLeft;
+            }
+        };
+
+        // --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
+        function switchTab(evt, tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            let clickedTab = evt.currentTarget;
+            clickedTab.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            let container = document.getElementById('tabsContainer');
+            let scrollLeft = clickedTab.offsetLeft - (container.offsetWidth / 2) + (clickedTab.offsetWidth / 2);
+            container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+        }
+
+        // --- КАЛЬКУЛЯТОРЫ ---
+
+        function updateToleranceOptions(type) {
+            let select = document.getElementById('th_tol_field');
+            select.innerHTML = '';
+            let options = type === 'out' ? ['h', 'g', 'e', 'f'] : ['H', 'G', 'E', 'F'];
+            options.forEach(opt => {
+                let newOpt = document.createElement('option');
+                newOpt.value = opt.toLowerCase();
+                newOpt.text = opt;
+                select.appendChild(newOpt);
+            });
+        }
+
+        function calcThread() {
+            let d = parseFloat(document.getElementById('th_d').value);
+            let p = parseFloat(document.getElementById('th_p').value);
+            let isOut = document.querySelector('input[name="th_type"]:checked').value === "out";
+            let tolField = document.getElementById('th_tol_field').value;
+            let tolClass = document.getElementById('th_tol_class').value;
+            
+            if(isNaN(d) || isNaN(p)) return alert("Введите числа!");
+
+            let vc = 120; 
+            let rpm = Math.round((vc * 1000) / (Math.PI * d));
+            
+            let H1 = 0.541265 * p;
+            let p_mkm = Math.round(H1 * 1000);
+            let q_first = Math.round(p * 100); 
+
+            let lower_d;
+            let x_gcode;
+            let drill_d;
+            let code_info = "";
+
+            if (isOut) {
+                lower_d = d - 1.226869 * p;
+                x_gcode = lower_d.toFixed(2);
+                code_info = `Нижний диаметр (по ГОСТ): ${lower_d.toFixed(3)}\n`;
+            } else {
+                lower_d = d - 1.082532 * p;
+                drill_d = d - p;
+                x_gcode = (d + 0.07 * p).toFixed(2);
+                code_info = `Нижний диаметр (по ГОСТ): ${lower_d.toFixed(3)}\n`;
+                code_info += `Сверло под резьбу: ${drill_d.toFixed(1)}\n`;
+            }
+
+            let code = `--- РЕЗЬБА M${d}x${p} (${isOut?'Наружная':'Внутренняя'}) ---\n`;
+            code += code_info;
+            code += `Обороты: ${rpm} об/мин\n`;
+            code += `Поле допуска: ${tolClass}${tolField.toUpperCase()}\n\n`;
+            
+            let z_len = -(10 * p);
+
+            code += `G0 X${isOut ? (d+2).toFixed(1) : (drill_d - 0.5).toFixed(1)} Z2. S${rpm} M3 G97\n`;
+            code += `G76 P020160 Q100 R0.08\n`;
+            code += `G76 X${x_gcode} Z${z_len.toFixed(1)} P${p_mkm} Q${q_first} F${p.toFixed(1)}.`;
+
+            document.getElementById('th_out').innerText = code;
+        }
+
+        function calcChamfer() {
+            let d = parseFloat(document.getElementById('ch_d').value);
+            let depth = parseFloat(document.getElementById('ch_depth').value);
+            let angle = parseFloat(document.getElementById('ch_angle').value);
+            let r = parseFloat(document.getElementById('ch_r').value);
+            let method = document.querySelector('input[name="ch_method"]:checked').value;
+            let isOut = document.querySelector('input[name="ch_type"]:checked').value === "out";
+            
+            if(isNaN(d) || isNaN(depth) || isNaN(angle) || isNaN(r)) return alert("Введите числа!");
+            let angleRad = angle * Math.PI / 180;
+            let halfAngleRad = angleRad / 2;
+            let code = `--- ФАСКА ${angle}° (Глубина ${depth}мм) ---\nТип: ${isOut ? 'Наружная' : 'Внутренняя'}\n\n`;
+
+            if (method === "simple") {
+                let delta_z = r * (1 - Math.tan(halfAngleRad));
+                let delta_x = 2 * delta_z;
+                let x_start = isOut ? (d - 2 * depth) : (d + 2 * depth);
+                let z_end = depth;
+                let x_comp = x_start + (isOut ? delta_x : -delta_x);
+                let z_comp = -delta_z;
+                code += `[УПРОЩЕННЫЙ РАСЧЕТ]\nНачальный диаметр: ${x_comp.toFixed(3)}\nГлубина с учетом R: ${z_comp.toFixed(3)}\n\nG0 X${(d+2).toFixed(1)} Z2.\nG1 Z0 F0.15\nG1 X${x_comp.toFixed(3)} Z${z_comp.toFixed(3)}\nG1 X${isOut ? d.toFixed(2) : (d - 2*depth).toFixed(2)} Z${z_end.toFixed(2)}\n`;
+            } else {
+                let z_tangent = depth + r - (r * Math.tan(halfAngleRad));
+                let x_tangent = d - 2 * depth - 2 * r * (1 - Math.cos(angleRad));
+                code += `[ТОЧНЫЙ РАСЧЕТ (Центр R)]\nНачальный диаметр с учетом радиуса: ${x_tangent.toFixed(3)} мм\nГлубина с учетом радиуса: ${z_tangent.toFixed(3)} мм\n\nG0 X${(d + 2).toFixed(1)} Z2.\nG0 X${x_tangent.toFixed(3)}\nG1 Z0 F0.07\nG1 X${d.toFixed(3)} Z-${z_tangent.toFixed(3)}\n`;
+            }
+            document.getElementById('ch_out').innerText = code;
+        }
+
+        function calcArc() {
+            let d = parseFloat(document.getElementById('arc_d').value);
+            let r_arc = parseFloat(document.getElementById('arc_r').value);
+            let toolR = parseFloat(document.getElementById('arc_tool_r').value);
+            let isOut = document.querySelector('input[name="arc_type"]:checked').value === "out";
+            let method = document.querySelector('input[name="arc_method"]:checked').value;
+            let g_code = document.getElementById('arc_gcode').value;
+            
+            if(isNaN(d) || isNaN(r_arc) || isNaN(toolR)) return alert("Введите числа!");
+            let code = `--- ${isOut?'НАРУЖНОЕ':'ВНУТРЕННЕЕ'} СКРУГЛЕНИЕ R${r_arc} ---\n\n`;
+
+            if (method === "g41") {
+                code += `[С КОРРЕКЦИЕЙ G41/G42]\n`;
+                if(isOut) {
+                    code += `G1 G42 X${(d - 2*r_arc).toFixed(3)} Z0\n${g_code} X${d.toFixed(3)} Z-${r_arc} R${r_arc}\nG1 G40 X${d} Z2.`;
+                } else {
+                    code += `G1 G41 X${d.toFixed(3)} Z0\n${g_code} X${(d + 2*r_arc).toFixed(3)} Z-${r_arc} R${r_arc}\nG1 G40 X${d} Z2.`;
+                }
+            } else {
+                code += `[БЕЗ КОРРЕКЦИИ (с учетом R${toolR})]\n`;
+                if(isOut) {
+                    let r_comp = r_arc + toolR;
+                    let x_start = d - 2 * r_comp;
+                    let z_end = -r_comp;
+                    code += `G1 X${x_start.toFixed(3)} Z0\n${g_code} X${d.toFixed(3)} Z${z_end.toFixed(3)} R${r_comp.toFixed(3)}`;
+                } else {
+                    let r_comp = r_arc - toolR;
+                    if (r_comp <= 0) return alert("Ошибка: Радиус пластины больше или равен радиусу скругления!");
+                    code += `G1 X${d.toFixed(3)} Z${toolR.toFixed(3)}\n${g_code} X${(d + 2 * r_arc).toFixed(3)} Z-${(r_arc - toolR).toFixed(3)} R${(r_arc - toolR).toFixed(3)}`;
+                }
+            }
+            document.getElementById('arc_out').innerText = code;
+        }
+
+        function calcFilletChamfer() {
+            let d1 = parseFloat(document.getElementById('fl_d1').value); 
+            let d2 = parseFloat(document.getElementById('fl_d2').value); 
+            let r = parseFloat(document.getElementById('fl_r').value);    
+            let angle = parseFloat(document.getElementById('fl_angle').value); 
+            let toolR = parseFloat(document.getElementById('fl_tool_r').value); 
+            if(isNaN(d1) || isNaN(d2) || isNaN(r) || isNaN(angle) || isNaN(toolR)) return alert("Введите числа!");
+            if(d2 <= d1) return alert("Больший диаметр должен быть больше меньшего!");
+            let alpha = angle * Math.PI / 180;
+            let z_intersect = (d2 - d1) / (2 * Math.tan(alpha));
+            let code = `--- ПЕРЕХОД: ГАЛТЕЛЬ R${r} + ФАСКА ${angle}° ---\n(Траектория центра резца R${toolR})\n\nG0 X${(d2 + 2).toFixed(1)} Z2.\nG1 Z${toolR.toFixed(3)} F0.15 (Подход)\n`;
+            let x_arc_end_calc = d1 + 2 * r * (1 - Math.sin(alpha));
+            let z_arc_end_calc = z_intersect + r * (1 - Math.cos(alpha));
+            let x_arc_end_comp = x_arc_end_calc + 2 * toolR * Math.sin(alpha);
+            let z_arc_end_comp = z_arc_end_calc + toolR * Math.cos(alpha);
+            code += `G3 X${x_arc_end_comp.toFixed(3)} Z${z_arc_end_comp.toFixed(3)} R${(r + toolR).toFixed(3)}\n`;
+            let z_end_comp = z_intersect - (d2 - x_arc_end_calc)/(2 * Math.tan(alpha)) + toolR * Math.cos(alpha);
+            code += `G1 X${d2.toFixed(3)} Z${z_end_comp.toFixed(3)}\n[ВНИМАНИЕ: Для сложных переходов рекомендуется использовать G41/G42]`;
+            document.getElementById('fl_out').innerText = code;
+        }
+
+        // 5. ШЕСТИГРАННИК
+        function calcHex() {
+            let d_work = parseFloat(document.getElementById('hx_work_d').value); 
+            let size_key = parseFloat(document.getElementById('hx_key').value);   
+            let d_tool = parseFloat(document.getElementById('hx_tool').value);    
+            let length = parseFloat(document.getElementById('hx_len').value);     
+            let feed = parseFloat(document.getElementById('hx_feed').value);      
+            let rpm = parseFloat(document.getElementById('hx_rpm').value);        
+
+            if(isNaN(d_work) || isNaN(size_key) || isNaN(d_tool) || isNaN(length) || isNaN(feed) || isNaN(rpm)) return alert("Введите числа!");
+            if (size_key >= d_work) return alert("Ошибка: Размер под ключ должен быть меньше диаметра заготовки!");
+
+            let r_in = size_key / 2;
+            let x_face = size_key;
+            let y_start = r_in + 2; 
+            let y_end = -r_in - 2;  
+
+            let code = `**************************************************\n`;
+            code += `** ВАЖНО: КИНЕМАТИКА СТАНКА **\n`;
+            code += `** ОСЬ X - РАДИАЛЬНАЯ ФРЕЗА, ПРИВЯЗКА ПО ТОРЦУ **\n`;
+            code += `** ОСЬ Z - ОСЬ ВРАЩЕНИЯ ФРЕЗЫ (ПРОДОЛЬНАЯ) **\n`;
+            code += `**************************************************\n\n`;
+            
+            code += `O2991 (ШЕСТИГРАННИК D${d_work} ПОД КЛЮЧ ${size_key}) \n`;
+            code += `; ---- ИНСТРУМЕНТЫ ----\n`;
+            code += `T8989 (Фреза D${d_tool})\n`;
+            code += `G97 S${rpm} M3\n`;
+            code += `G98\n`;
+            code += `M50 (Второй насос СОЖ)\n\n`;
+            
+            code += `; ---- ПРИВЯЗКА ----\n`;
+            code += `G28 H0\n`;
+            code += `G0 C0\n`;
+            code += `G0 Z100. Y0\n`;
+            code += `M8\n`;
+            
+            code += `; ---- НАСТРОЙКИ ----\n`;
+            code += `#101 = 0 (Счетчик угла)\n`;
+            code += `#102 = 0 (Счетчик граней)\n\n`;
+
+            code += `; ---- ЦИКЛ ОБРАБОТКИ ГРАНЕЙ ----\n`;
+            code += `WHILE [#102 LT 6] DO 1\n`;
+            code += `  G0 C#101 (Поворот на угол #101)\n`;
+            code += `  M84 (Зажим оси C)\n\n`;
+            
+            code += `  ; 1. Подвод к началу фрезерования (по Z)\n`;
+            code += `  G0 Z-${length.toFixed(1)}\n\n`;
+            
+            code += `  ; 2. Подвод по X (ПРИВЯЗКА ПО ТОРЦУ ФРЕЗЫ)\n`;
+            code += `  G0 X${x_face.toFixed(3)}\n\n`;
+            
+            code += `  ; 3. Подвод по Y (вне заготовки)\n`;
+            code += `  G0 Y${y_start.toFixed(1)}\n\n`;
+            
+            code += `  ; 4. Фрезерование (проход по Y)\n`;
+            code += `  G1 Y${y_end.toFixed(1)} F${feed}\n\n`;
+            
+            code += `  ; 5. Отвод\n`;
+            code += `  G0 X${(d_work + 5).toFixed(1)} (Отвод по X)\n`;
+            code += `  G0 Y0 (Отвод по Y)\n\n`;
+            
+            code += `  M85 (Разжим оси C)\n`;
+            code += `  G0 Z50. (Подъем по Z)\n\n`;
+            
+            code += `  #101 = #101 + 60.\n`;
+            code += `  #102 = #102 + 1.\n`;
+            code += `END 1\n\n`;
+
+            code += `; ---- КОНЕЦ ----\n`;
+            code += `G0 Z100.\n`;
+            code += `M9\n`;
+            code += `M30`;
+
+            document.getElementById('hx_out').innerText = code;
+        }
+
+        function calcDrillCone() {
+            let d = parseFloat(document.getElementById('dr_d').value);
+            let angle = parseFloat(document.getElementById('dr_angle').value);
+            if(isNaN(d) || isNaN(angle)) return alert("Введите числа!");
+            let rad = (angle / 2) * (Math.PI / 180);
+            let depth = (d / 2) / Math.tan(rad);
+            document.getElementById('dr_out').innerText = `Диаметр: ${d} мм\nУгол: ${angle}°\n\nГлубина конуса: ${depth.toFixed(3)} мм\n\n(Для полного сверления добавьте рабочую длину)`;
+        }
+
+        function calcModes() {
+            let d = parseFloat(document.getElementById('md_d').value);
+            let teeth = parseInt(document.getElementById('md_z').value);
+            let vc = parseFloat(document.getElementById('md_mat').value);
+            if(isNaN(d) || isNaN(teeth) || isNaN(vc)) return alert("Введите числа!");
+            let fz = vc > 300 ? 0.1 : (vc > 200 ? 0.05 : 0.04); 
+            let rpm = Math.round((vc * 1000) / (Math.PI * d));
+            let feed = Math.round(rpm * fz * teeth);
+            document.getElementById('md_out').innerText = `ОБОРОТЫ S: ${rpm} об/мин\nПОДАЧА F: ${feed} мм/мин\n\nG97 S${rpm} M3\nG1 X.. Y.. F${feed}`;
+        }
+
+        function calcBore() {
+            let d = parseFloat(document.getElementById('br_d').value);
+            let size = parseFloat(document.getElementById('br_size').value);
+            let minD = parseFloat(document.getElementById('br_min').value);
+            if(isNaN(d) || isNaN(size) || isNaN(minD)) return alert("Введите числа!");
+            let passD = 2 * size; 
+            let result = `Диаметр отверстия: ${d} мм\nРазмер резца (вылет): ${size} мм\n\n`;
+            if (d < passD) {
+                result += `❌ ВНИМАНИЕ! Резец не пролезет.\nМинимальный диаметр для этого резца: ${passD} мм`;
+            } else {
+                result += `✅ Резец пролезет.\nЗапас по диаметру: ${(d - passD).toFixed(2)} мм\nМакс. глубина резания: ${((d - minD) / 2).toFixed(3)} мм`;
+            }
+            document.getElementById('br_out').innerText = result;
+        }
+
+        function calcCoord(mode) {
+            if (mode === 'toPolar') {
+                let x = parseFloat(document.getElementById('cx').value);
+                let y = parseFloat(document.getElementById('cy').value);
+                if(isNaN(x) || isNaN(y)) return alert("Введите X и Y");
+                let r = Math.sqrt(x*x + y*y);
+                let ang = Math.atan2(y, x) * (180 / Math.PI);
+                if (ang < 0) ang += 360;
+                document.getElementById('cr').value = r.toFixed(3);
+                document.getElementById('cang').value = ang.toFixed(3);
+                document.getElementById('coord_out').innerText = `Радиус: ${r.toFixed(3)} мм\nУгол: ${ang.toFixed(3)}°`;
+            } else {
+                let r = parseFloat(document.getElementById('cr').value);
+                let ang = parseFloat(document.getElementById('cang').value);
+                if(isNaN(r) || isNaN(ang)) return alert("Введите Радиус и Угол");
+                let rad = ang * (Math.PI / 180);
+                let x = r * Math.cos(rad);
+                let y = r * Math.sin(rad);
+                document.getElementById('cx').value = x.toFixed(3);
+                document.getElementById('cy').value = y.toFixed(3);
+                document.getElementById('coord_out').innerText = `X: ${x.toFixed(3)} мм\nY: ${y.toFixed(3)} мм`;
+            }
+        }
+
+        function calcAngle(mode) {
+            if (mode === 'toGMS') {
+                let deg = parseFloat(document.getElementById('a_deg').value);
+                if(isNaN(deg)) return alert("Введите градусы");
+                let d = Math.floor(deg);
+                let minFloat = (deg - d) * 60;
+                let m = Math.floor(minFloat);
+                let s = (minFloat - m) * 60;
+                document.getElementById('a_d').value = d;
+                document.getElementById('a_m').value = m;
+                document.getElementById('a_s').value = s.toFixed(2);
+                document.getElementById('ang_out').innerText = `${d}° ${m}' ${s.toFixed(2)}"`;
+            } else {
+                let d = parseFloat(document.getElementById('a_d').value) || 0;
+                let m = parseFloat(document.getElementById('a_m').value) || 0;
+                let s = parseFloat(document.getElementById('a_s').value) || 0;
+                let dec = d + (m / 60) + (s / 3600);
+                document.getElementById('a_deg').value = dec.toFixed(5);
+                document.getElementById('ang_out').innerText = `Десятичные градусы: ${dec.toFixed(5)}°`;
+            }
+        }
+    </script>
+</body>
+</html>
